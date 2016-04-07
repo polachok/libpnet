@@ -1,0 +1,44 @@
+// Copyright (c) 2014, 2015 Robert Clipsham <robert@octarineparrot.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+use packet::Packet;
+use packet::ip::IpNextHeaderProtocol;
+
+use pnet_macros_support::types::*;
+
+use std::net::{Ipv4Addr, Ipv6Addr};
+
+/// Represents a TCP Packet
+#[packet]
+pub struct Tcp {
+    source: u16be,
+    destination: u16be,
+    seq: u32be,
+    ack_seq: u32be,
+    data_offset: u4,
+    reserved: u4,
+    cwr: u1,
+    ece: u1,
+    urg: u1,
+    ack: u1,
+    psh: u1,
+    rst: u1,
+    syn: u1,
+    fin: u1,
+    window: u16be,
+    checksum: u16be,
+    urg_ptr: u16be,
+    #[length_fn = "tcp_options_length"]
+    options: Vec<u8>,
+    #[payload]
+    payload: Vec<u8>,
+}
+
+fn tcp_options_length(tcp: &TcpPacket) -> usize {
+  tcp.get_data_offset() as usize * 4 - 20
+}
