@@ -29,7 +29,8 @@ version = ">=0.0"
 [dependencies.netmap_sys]
 features = ["netmap_with_libs"]
 optional = true
-version = ">=0.0"
+#version = ">=0.0"
+git = "https://github.com/libpnet/netmap_sys"
 
 [dependencies.libc]
 version = "=0.1.12"
