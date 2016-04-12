@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use packet::Packet;
+use packet::PacketSize;
 use packet::PrimitiveValues;
 use packet::ip::IpNextHeaderProtocol;
 
@@ -87,6 +88,30 @@ pub struct TcpOption {
     data: Vec<u8>,
 }
 
+impl TcpOption {
+    /// Create NOP option
+    pub fn nop() -> Self {
+        TcpOption {
+             number: TcpOptionNumbers::NOP,
+             length: vec![],
+             data: vec![],
+        }
+    }
+
+    /// Create Timestamp option
+    pub fn timestamp(my: [u8;4], their: [u8;4]) -> Self {
+        let mut data = vec![];
+        data.extend_from_slice(&my[..]);
+        data.extend_from_slice(&their[..]);
+
+        TcpOption {
+            number: TcpOptionNumbers::TIMESTAMPS,
+            length: vec![10],
+            data: data
+        }
+    }
+}
+
 /// This function gets the 'length' of the length field of the IPv4Option packet
 /// Few options (EOL, NOP) are 1 bytes long, and then have a length field equal
 /// to 0
@@ -121,4 +146,124 @@ impl PrimitiveValues for TcpOptionNumber {
 
 fn tcp_options_length(tcp: &TcpPacket) -> usize {
   tcp.get_data_offset() as usize * 4 - 20
+}
+
+
+/// Calculate the checksum for a packet built on IPv4
+pub fn ipv4_checksum(packet: &TcpPacket,
+                     ipv4_source: Ipv4Addr,
+                     ipv4_destination: Ipv4Addr,
+                     next_level_protocol: IpNextHeaderProtocol)
+    -> u16be {
+    let IpNextHeaderProtocol(next_level_protocol) = next_level_protocol;
+    let mut sum = 0u32;
+
+    // Checksum pseudo-header
+    // IPv4 source
+    let octets = ipv4_source.octets();
+    sum += (octets[0] as u32) << 8 | octets[1] as u32;
+    sum += (octets[2] as u32) << 8 | octets[3] as u32;
+
+    // IPv4 destination
+    let octets = ipv4_destination.octets();
+    sum += (octets[0] as u32) << 8 | octets[1] as u32;
+    sum += (octets[2] as u32) << 8 | octets[3] as u32;
+
+    // IPv4 Next level protocol
+    sum += next_level_protocol as u32;
+
+    // TCP Length
+    sum += packet.packet().len() as u32;
+
+    // Checksum TCP header/packet
+    let mut i = 0;
+    let len = packet.packet().len();
+    while i < len && i + 1 < len {
+        sum += (packet.packet()[i] as u32) << 8 | packet.packet()[i + 1] as u32;
+        i += 2;
+    }
+    // If the length is odd, make sure to checksum the final byte
+    if len & 1 != 0 {
+        sum += (packet.packet()[len - 1] as u32) << 8;
+    }
+
+    while sum >> 16 != 0 {
+        sum = (sum >> 16) + (sum & 0xFFFF);
+    }
+
+    !sum as u16
+}
+
+#[test]
+fn tcp_header_ipv4_test() {
+    use pnet::packet::ip::IpNextHeaderProtocols;
+    use pnet::packet::ipv4::MutableIpv4Packet;
+
+    let mut packet = [0u8; 20 + 32 + 4];
+    let ipv4_source = Ipv4Addr::new(192, 168, 2, 1);
+    let ipv4_destination = Ipv4Addr::new(192, 168, 111, 51);
+    let next_level_protocol = IpNextHeaderProtocols::Tcp;
+    {
+        let mut ip_header = MutableIpv4Packet::new(&mut packet[..]).unwrap();
+        ip_header.set_next_level_protocol(next_level_protocol);
+        ip_header.set_source(ipv4_source);
+        ip_header.set_destination(ipv4_destination);
+    }
+
+    // Set data
+    packet[20 + 32] = 't' as u8;
+    packet[20 + 32 + 1] = 'e' as u8;
+    packet[20 + 32 + 2] = 's' as u8;
+    packet[20 + 32 + 3] = 't' as u8;
+
+    {
+        let mut tcp_header = MutableTcpPacket::new(&mut packet[20..]).unwrap();
+        tcp_header.set_source(49511);
+        assert_eq!(tcp_header.get_source(), 49511);
+
+        tcp_header.set_destination(9000);
+        assert_eq!(tcp_header.get_destination(), 9000);
+
+        tcp_header.set_sequence(0x9037d2b8);
+        assert_eq!(tcp_header.get_sequence(), 0x9037d2b8);
+
+        tcp_header.set_acknowledgement(0x944bb276);
+        assert_eq!(tcp_header.get_acknowledgement(), 0x944bb276);
+
+        tcp_header.set_psh(1);
+        assert_eq!(tcp_header.get_psh(), 1);
+
+        tcp_header.set_ack(1);
+        assert_eq!(tcp_header.get_ack(), 1);
+
+        tcp_header.set_window(4015);
+        assert_eq!(tcp_header.get_window(), 4015);
+
+        tcp_header.set_data_offset(8);
+        assert_eq!(tcp_header.get_data_offset(), 8);
+
+        let ts = TcpOption::timestamp([0x2c, 0x57, 0xcd, 0xa5], [0x02, 0xa0, 0x41, 0x92]);
+        tcp_header.set_options(vec![TcpOption::nop(), TcpOption::nop(), ts]);
+
+        let checksum = ipv4_checksum(&tcp_header.to_immutable(),
+                                     ipv4_source,
+                                     ipv4_destination,
+                                     next_level_protocol);
+        tcp_header.set_checksum(checksum);
+        assert_eq!(tcp_header.get_checksum(), 0xc031);
+    }
+    let ref_packet = [0xc1, 0x67, /* source */
+                      0x23, 0x28, /* destination */
+                      0x90, 0x37, 0xd2, 0xb8, /* seq */
+                      0x94, 0x4b, 0xb2, 0x76, /* ack */
+                      0x80, 0x18, 0x0f, 0xaf, /* length, flags, win */
+                      0xc0, 0x31, /* checksum */
+                      0x00, 0x00,  /* urg ptr */
+                      0x01, 0x01, /* options: nop */
+                      0x08, 0x0a, 0x2c, 0x57,
+                      0xcd, 0xa5, 0x02, 0xa0,
+                      0x41, 0x92, /* timestamp */
+                      0x74, 0x65, 0x73, 0x74 /* test */
+                      ];
+    assert_eq!(&ref_packet[..], &packet[20..]);
 }
