@@ -89,6 +89,16 @@ pub struct TcpOption {
 }
 
 impl TcpOption {
+    /// Get option number
+    pub fn get_number(&self) -> TcpOptionNumber {
+        self.number
+    }
+
+    /// Get data
+    pub fn get_data(&self) -> &[u8] {
+        &self.data
+    }
+    
     /// Create NOP option
     pub fn nop() -> Self {
         TcpOption {
