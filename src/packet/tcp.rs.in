@@ -243,7 +243,7 @@ fn tcp_header_ipv4_test() {
         assert_eq!(tcp_header.get_data_offset(), 8);
 
         let ts = TcpOption::timestamp([0x2c, 0x57, 0xcd, 0xa5], [0x02, 0xa0, 0x41, 0x92]);
-        tcp_header.set_options(vec![TcpOption::nop(), TcpOption::nop(), ts]);
+        tcp_header.set_options(&vec![TcpOption::nop(), TcpOption::nop(), ts]);
 
         let checksum = ipv4_checksum(&tcp_header.to_immutable(),
                                      ipv4_source,
