@@ -170,47 +170,32 @@ fn tcp_options_length(tcp: &TcpPacket) -> usize {
 
 
 /// Calculate the checksum for a packet built on IPv4
-pub fn ipv4_checksum(packet: &TcpPacket,
-                     ipv4_source: Ipv4Addr,
+pub fn ipv4_checksum(packet: &TcpPacket, ipv4_source: Ipv4Addr,
                      ipv4_destination: Ipv4Addr,
-                     next_level_protocol: IpNextHeaderProtocol)
-    -> u16be {
+                     next_level_protocol: IpNextHeaderProtocol) -> u16 {
     let IpNextHeaderProtocol(next_level_protocol) = next_level_protocol;
     let mut sum = 0u32;
-
-    // Checksum pseudo-header
-    // IPv4 source
     let octets = ipv4_source.octets();
-    sum += (octets[0] as u32) << 8 | octets[1] as u32;
-    sum += (octets[2] as u32) << 8 | octets[3] as u32;
+    sum += ((octets[0] as u16) << 8 | (octets[1] as u16)) as u32;
+    sum += ((octets[2] as u16) << 8 | (octets[3] as u16)) as u32;
 
-    // IPv4 destination
     let octets = ipv4_destination.octets();
-    sum += (octets[0] as u32) << 8 | octets[1] as u32;
-    sum += (octets[2] as u32) << 8 | octets[3] as u32;
+    sum += ((octets[0] as u16) << 8 | (octets[1] as u16)) as u32;
+    sum += ((octets[2] as u16) << 8 | (octets[3] as u16)) as u32;
 
-    // IPv4 Next level protocol
     sum += next_level_protocol as u32;
-
-    // TCP Length
-    sum += packet.packet().len() as u32;
-
-    // Checksum TCP header/packet
+    let bytes = packet.packet();
+    let len = bytes.len();
+    sum += len as u32;
     let mut i = 0;
-    let len = packet.packet().len();
-    while i < len && i + 1 < len {
-        sum += (packet.packet()[i] as u32) << 8 | packet.packet()[i + 1] as u32;
+
+    while i + 1 < len {
+        sum += ((bytes[i] as u16) << 8 | (bytes[i + 1] as u16)) as u32;
         i += 2;
     }
-    // If the length is odd, make sure to checksum the final byte
-    if len & 1 != 0 {
-        sum += (packet.packet()[len - 1] as u32) << 8;
-    }
 
-    while sum >> 16 != 0 {
-        sum = (sum >> 16) + (sum & 0xFFFF);
-    }
-
+    if len & 1 != 0 { sum += (bytes[len - 1] as u32) << 8; }
+    while sum >> 16 != 0 { sum = (sum >> 16) + (sum & 65535); }
     !sum as u16
 }
 
