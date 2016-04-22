@@ -150,10 +150,11 @@ pub fn checksum(packet: &Ipv4Packet) -> u16be {
     let len = packet.get_header_length() as usize * 4;
     let mut sum = 0u32;
     let mut i = 0;
+    let bytes = packet.packet();
     while i < len {
-        let word = (packet.packet()[i] as u32) << 8 | packet.packet()[i + 1] as u32;
-        sum = sum + word;
-        i = i + 2;
+        let word = ((bytes[i] as u16) << 8 | bytes[i + 1] as u16) as u32;
+        sum += word;
+        i += 2;
     }
     while sum >> 16 != 0 {
         sum = (sum >> 16) + (sum & 0xFFFF);
