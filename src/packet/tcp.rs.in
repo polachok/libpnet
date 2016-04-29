@@ -125,6 +125,7 @@ impl TcpOption {
 /// This function gets the 'length' of the length field of the IPv4Option packet
 /// Few options (EOL, NOP) are 1 bytes long, and then have a length field equal
 /// to 0
+#[inline]
 fn tcp_option_length(option: &TcpOptionPacket) -> usize {
     match option.get_number() {
         TcpOptionNumbers::EOL => 0,
@@ -133,6 +134,7 @@ fn tcp_option_length(option: &TcpOptionPacket) -> usize {
     }
 }
 
+#[inline]
 fn tcp_option_payload_length(tcp_option: &TcpOptionPacket) -> usize {
     match tcp_option.get_number() {
         TcpOptionNumbers::EOL => 0,
@@ -164,10 +166,10 @@ impl PrimitiveValues for TcpOptionNumber {
     }
 }
 
+#[inline]
 fn tcp_options_length(tcp: &TcpPacket) -> usize {
   tcp.get_data_offset() as usize * 4 - 20
 }
-
 
 /// Calculate the checksum for a packet built on IPv4
 pub fn ipv4_checksum(packet: &TcpPacket, ipv4_source: Ipv4Addr,
