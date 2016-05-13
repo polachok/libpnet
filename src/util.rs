@@ -29,6 +29,7 @@ pub struct MacAddr(pub u8, pub u8, pub u8, pub u8, pub u8, pub u8);
 
 impl MacAddr {
     /// Construct a new MacAddr
+    #[inline]
     pub fn new(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8) -> MacAddr {
         MacAddr(a, b, c, d, e, f)
     }
@@ -36,6 +37,8 @@ impl MacAddr {
 
 impl PrimitiveValues for MacAddr {
     type T = (u8, u8, u8, u8, u8, u8);
+
+    #[inline]
     fn to_primitive_values(&self) -> (u8, u8, u8, u8, u8, u8) {
         (self.0, self.1, self.2, self.3, self.4, self.5)
     }
