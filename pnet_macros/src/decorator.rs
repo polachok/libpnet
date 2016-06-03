@@ -1139,7 +1139,7 @@ fn generate_accessor_str(name: &str,
     };
 
     let accessor = if let Some(struct_name) = inner {
-        format!("#[inline]
+        format!("#[inline(always)]
         #[allow(trivial_numeric_casts)]
         #[cfg_attr(feature = \"clippy\", allow(used_underscore_binding))]
         fn get_{name}(_self: &{struct_name}) -> {ty} {{
