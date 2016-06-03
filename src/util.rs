@@ -25,11 +25,11 @@ use internal;
 
 /// A MAC address
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub struct MacAddr([u8; 6]);
+pub struct MacAddr(pub [u8; 6]);
 
 impl MacAddr {
     /// Construct a new MacAddr
-    #[inline]
+    #[inline(always)]
     pub fn new(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8) -> MacAddr {
         MacAddr([a, b, c, d, e, f])
     }
