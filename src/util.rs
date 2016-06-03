@@ -25,13 +25,13 @@ use internal;
 
 /// A MAC address
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub struct MacAddr(pub u8, pub u8, pub u8, pub u8, pub u8, pub u8);
+pub struct MacAddr([u8; 6]);
 
 impl MacAddr {
     /// Construct a new MacAddr
     #[inline]
     pub fn new(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8) -> MacAddr {
-        MacAddr(a, b, c, d, e, f)
+        MacAddr([a, b, c, d, e, f])
     }
 }
 
@@ -40,7 +40,7 @@ impl PrimitiveValues for MacAddr {
 
     #[inline]
     fn to_primitive_values(&self) -> (u8, u8, u8, u8, u8, u8) {
-        (self.0, self.1, self.2, self.3, self.4, self.5)
+        (self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5])
     }
 }
 
@@ -48,12 +48,7 @@ impl fmt::Display for MacAddr {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt,
                "{:x}:{:x}:{:x}:{:x}:{:x}:{:x}",
-               self.0,
-               self.1,
-               self.2,
-               self.3,
-               self.4,
-               self.5)
+               self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5])
     }
 }
 
@@ -95,7 +90,7 @@ impl FromStr for MacAddr {
         }
 
         if i == 6 {
-            Ok(MacAddr(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]))
+            Ok(MacAddr(parts))
         } else {
             Err(ParseMacAddrErr::TooFewComponents)
         }
@@ -165,12 +160,12 @@ fn sockaddr_to_network_addr(sa: *const libc::sockaddr) -> (Option<MacAddr>, Opti
             (None, None)
         } else if (*sa).sa_family as libc::c_int == libc::AF_PACKET {
             let sll: *const libc::sockaddr_ll = mem::transmute(sa);
-            let mac = MacAddr((*sll).sll_addr[0],
+            let mac = MacAddr([(*sll).sll_addr[0],
                               (*sll).sll_addr[1],
                               (*sll).sll_addr[2],
                               (*sll).sll_addr[3],
                               (*sll).sll_addr[4],
-                              (*sll).sll_addr[5]);
+                              (*sll).sll_addr[5]]);
 
             (Some(mac), None)
         } else {

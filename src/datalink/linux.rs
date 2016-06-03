@@ -33,9 +33,9 @@ fn network_addr_to_sockaddr(ni: &NetworkInterface,
     unsafe {
         let sll: *mut libc::sockaddr_ll = mem::transmute(storage);
         (*sll).sll_family = libc::AF_PACKET as libc::sa_family_t;
-        if let Some(MacAddr(a, b, c, d, e, f)) = ni.mac {
+        /*if let Some(MacAddr(a, b, c, d, e, f)) = ni.mac {
             (*sll).sll_addr = [a, b, c, d, e, f, 0, 0];
-        }
+        }*/
         (*sll).sll_protocol = (proto as u16).to_be();
         (*sll).sll_halen = 6;
         (*sll).sll_ifindex = ni.index as i32;

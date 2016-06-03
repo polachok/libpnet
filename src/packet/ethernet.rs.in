@@ -29,11 +29,11 @@ fn ethernet_header_test() {
     {
         let mut ethernet_header = MutableEthernetPacket::new(&mut packet[..]).unwrap();
 
-        let source = MacAddr(0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc);
+        let source = MacAddr::new(0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc);
         ethernet_header.set_source(source);
         assert_eq!(ethernet_header.get_source(), source);
 
-        let dest = MacAddr(0xde, 0xf0, 0x12, 0x34, 0x45, 0x67);
+        let dest = MacAddr::new(0xde, 0xf0, 0x12, 0x34, 0x45, 0x67);
         ethernet_header.set_destination(dest);
         assert_eq!(ethernet_header.get_destination(), dest);
 
