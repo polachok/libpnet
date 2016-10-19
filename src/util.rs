@@ -24,7 +24,7 @@ use std::net::IpAddr;
 use internal;
 
 /// A MAC address
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Eq, Clone, Copy, Hash)]
 pub struct MacAddr(pub [u8; 6]);
 
 impl MacAddr {
@@ -32,6 +32,17 @@ impl MacAddr {
     #[inline(always)]
     pub fn new(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8) -> MacAddr {
         MacAddr([a, b, c, d, e, f])
+    }
+}
+
+impl PartialEq for MacAddr {
+    fn eq(&self, other: &MacAddr) -> bool {
+        let first = self.0[0] as u64 | (self.0[1] as u64) << 8 | (self.0[2] as u64) << 16 |
+            (self.0[3] as u64) << 24 | (self.0[4] as u64) << 32 | (self.0[5] as u64) << 40;
+
+        let second = other.0[0] as u64 | (other.0[1] as u64) << 8 | (other.0[2] as u64) << 16 |
+            (other.0[3] as u64) << 24 | (other.0[4] as u64) << 32 | (other.0[5] as u64) << 40;
+        first == second
     }
 }
 
