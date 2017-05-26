@@ -602,9 +602,11 @@ fn handle_vector_field(cx: &mut GenContext,
                                 #[allow(trivial_numeric_casts)]
                                 #[cfg_attr(feature = \"clippy\", allow(used_underscore_binding))]
                                 pub fn get_{name}_raw(&self) -> &[u8] {{
+                                    use std::cmp::min;
                                     let _self = self;
+                                    let pkt_len = self.packet.len();
                                     let current_offset = {co};
-                                    let end = current_offset + {packet_length};
+                                    let end = min(current_offset + {packet_length}, pkt_len);
 
                                     &_self.packet[current_offset..end]
                                 }}
