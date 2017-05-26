@@ -213,7 +213,7 @@ fn tcp_option_payload_length(tcp_option: &TcpOptionPacket) -> usize {
         TcpOptionNumbers::SACK_PERMITTED => 0,
         TcpOptionNumbers::TIMESTAMPS => 8,
         TcpOptionNumbers::SACK | _ => {
-            match tcp_option.get_length().first() {
+            match tcp_option.get_length_raw().first() {
                 Some(len) => *len as usize - 2,
                 None => 0,
             }
